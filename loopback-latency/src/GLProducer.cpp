@@ -73,9 +73,23 @@ bool GLProducer::Initialize()
 
     glfwWindowHint(GLFW_REFRESH_RATE, m_format.frameRate);
     m_window = glfwCreateWindow(m_format.width, m_format.height, "GLRenderer", m_monitor, nullptr);
+
+    // The window may be initialized at a less-than-fullscreen size due to
+    // desktop UI menu/toolbars and then switched to the actual fullscreen
+    // size after a short delay. If this is the case, this loop waits until
+    // the window size is actually fullscreen.
+    const int MAX_WINDOW_SIZE_WAIT_EVENTS = 100;
+    const double WINDOW_SIZE_WAIT_EVENT_TIMEOUT = 0.01;
+    int windowWidth = 0, windowHeight = 0, eventCount = 0;
+    while (windowWidth != m_format.width &&
+           windowHeight != m_format.height &&
+           eventCount++ < MAX_WINDOW_SIZE_WAIT_EVENTS)
+    {
+        glfwWaitEventsTimeout(WINDOW_SIZE_WAIT_EVENT_TIMEOUT);
+        glfwGetWindowSize(m_window, &windowWidth, &windowHeight);
+    }
+
     const GLFWvidmode* mode = glfwGetVideoMode(m_monitor);
-    int windowWidth, windowHeight;
-    glfwGetWindowSize(m_window, &windowWidth, &windowHeight);
     if (!m_window || !mode ||
         mode->width != m_format.width ||
         mode->height != m_format.height ||
